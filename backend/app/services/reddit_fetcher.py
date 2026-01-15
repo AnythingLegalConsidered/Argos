@@ -106,6 +106,7 @@ class RedditFetcher(BaseFetcher):
 
     def _parse_subreddit(self, url: str) -> str | None:
         """Extract subreddit name from URL format /r/subreddit."""
+        # Handle both /r/subreddit and r/subreddit formats
         match = re.match(r"^/?r/(\w+)$", url.strip().lower())
         if match:
             return match.group(1)

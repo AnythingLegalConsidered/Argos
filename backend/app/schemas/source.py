@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator, HttpUrl
+from pydantic import BaseModel, Field, field_validator
 
 
 class SourceType(str, Enum):
@@ -62,11 +62,11 @@ class SourceCreate(BaseModel):
         else:
             subreddit = url
 
-        # Validate subreddit name (alphanumeric + underscore, 3-21 chars)
-        if not re.match(r"^[a-zA-Z0-9_]{2,21}$", subreddit):
+        # Validate subreddit name (alphanumeric + underscore, 3-21 chars per Reddit rules)
+        if not re.match(r"^[a-zA-Z0-9_]{3,21}$", subreddit):
             raise ValueError(
                 f"Invalid subreddit name: {subreddit}. "
-                "Must be 2-21 alphanumeric characters or underscores."
+                "Must be 3-21 alphanumeric characters or underscores."
             )
 
         return f"/r/{subreddit}"

@@ -1,94 +1,103 @@
-# Handoff — 2026-01-15 19:30
+# Handoff — 2026-01-15 23:30
 
 ## Contexte
-Argos est une plateforme de veille personnelle (RSS + Reddit) avec FastAPI backend et React frontend, utilisant Supabase. Le MVP est **complet** (6 Epics, 17 Stories). Cette session a consisté en un **code review adversarial BMAD** du backend avec correction des vulnérabilités trouvées.
+Argos est une plateforme de veille personnelle (RSS + Reddit) avec FastAPI backend et React frontend, utilisant Supabase. Le MVP est **complet** (6 Epics, 19 Stories). Cette session a effectué un **code review ADVERSARIAL BMAD** de toutes les stories.
 
 ## Ce qui a été fait dans cette session
 
-### Code Review Backend (BMAD workflow)
-Exécuté `/bmad:bmm:workflows:code-review` sur le backend complet (18 fichiers Python).
+### Code Review BMAD (workflow `code-review`)
+**Epic 2 - Sources Management** : COMPLET
+- **Story 2-1** (Schema DB) : 4 issues fixés
+  - 3 fonctions DB avec search_path mutable corrigées (Supabase)
+  - Import `HttpUrl` non utilisé supprimé dans `source.py`
+  - 1 issue manuel restant : Leaked Password Protection (Supabase Dashboard)
+- **Story 2-2** (API CRUD Sources) : Reviewé, issues notés (pas de fix critique)
+- **Story 2-3** (Reddit) : 2 issues fixés
+  - Validation subreddit corrigée (2-21 → 3-21 caractères)
+  - Commentaire regex clarifié
+- **Story 2-4** (UI Sources) : Reviewé, issues UX mineurs notés
 
-**Issues identifiées :**
-- 4 HIGH (sécurité)
-- 5 MEDIUM (qualité/performance)
-- 3 LOW (style)
+**Epic 3 - Content Fetching** : EN COURS
+- **Story 3-1** (RSS Fetcher) : Reviewé
+- **Story 3-2** (Reddit Fetcher) : Reviewé
+- **Story 3-3** (Periodic Fetch) : Reviewé (pas encore écrit dans story file)
+- **Story 3-4** (Manual Capture) : Reviewé (pas encore écrit dans story file)
 
-### Fixes appliqués
+**Epic 4-6** : PAS ENCORE REVIEWÉS
 
-| Issue | Sévérité | Status | Description |
-|-------|----------|--------|-------------|
-| H1 | HIGH | ✅ DONE | SSRF protection - validation URL avant fetch |
-| H2 | HIGH | ✅ DONE | Rate limiting sur endpoints sensibles |
-| H3 | HIGH | ✅ DONE | Sanitize logs auth (plus de token dans logs) |
-| H4 | HIGH | ✅ DONE | Validation UUID sur params path |
-| M1 | MEDIUM | 🔄 EN COURS | Refactor duplication fetchers (BaseFetcher créé, RSSFetcher migré) |
-| M2/M3 | MEDIUM | ⏳ TODO | Optimiser search_articles |
-| M4 | MEDIUM | ⏳ TODO | Corriger total_count approximatif |
-| M5 | MEDIUM | ⏳ TODO | Sanitize error messages |
-| L2 | LOW | ⏳ TODO | CORS configurable via env |
-
-## Fichiers créés cette session
-
-| Fichier | Description |
-|---------|-------------|
-| `backend/app/utils/__init__.py` | Package init |
-| `backend/app/utils/url_validator.py` | Protection SSRF (blocage IPs privées, metadata cloud) |
-| `backend/app/utils/rate_limiter.py` | Rate limiter in-memory avec décorateurs |
-| `backend/app/utils/validators.py` | Validation UUID pour path params |
-| `backend/app/services/base_fetcher.py` | Classe abstraite avec méthodes communes |
-
-## Fichiers modifiés cette session
-
+### Fichiers modifiés
 | Fichier | Modification |
 |---------|--------------|
-| `backend/app/services/article_capture.py` | Import + appel validate_url_for_ssrf() |
-| `backend/app/routers/fetch.py` | Import rate_limiter, décorateur @rate_limit_by_user |
-| `backend/app/routers/articles.py` | Import rate_limiter + validators, UUIDPath sur article_id |
-| `backend/app/routers/sources.py` | Import validators, UUIDPath sur source_id (3 endpoints) |
-| `backend/app/auth.py` | Sanitize logs JWT (plus de `{e}` dans warning) |
-| `backend/app/services/rss_fetcher.py` | Hérite de BaseFetcher, utilise save_article/update_source_last_fetched |
+| `backend/app/schemas/source.py` | Supprimé import HttpUrl, corrigé regex 3-21 |
+| `backend/app/services/reddit_fetcher.py` | Clarifié commentaire regex |
+| `_bmad-output/.../2-1-*.md` | Ajouté section Senior Developer Review |
+| `_bmad-output/.../2-2-*.md` | Ajouté section Senior Developer Review |
+| `_bmad-output/.../2-3-*.md` | Ajouté section Senior Developer Review |
+| `_bmad-output/.../2-4-*.md` | Ajouté section Senior Developer Review |
+| Supabase DB | 3 fonctions recréées avec SET search_path |
+
+### Fixes Supabase appliqués
+```sql
+-- Les 3 fonctions suivantes ont été corrigées avec SET search_path = public :
+-- 1. public.search_articles
+-- 2. public.count_search_articles
+-- 3. public.update_updated_at_column
+```
 
 ## État actuel
-- **Tâche en cours** : M1 - Refactor duplication fetchers
-- **Dernière action** : RSSFetcher migré vers BaseFetcher
-- **Prochaine action** : Migrer RedditFetcher vers BaseFetcher, puis continuer M2-M5
+- **Tâche en cours** : Code review Epic 3 (partiellement fait), Epic 4-6 restants
+- **Dernière action** : Review Story 3-1 à 3-4 (lu le code, pas encore mis à jour les story files)
+- **Prochaine action** : Continuer code review Epic 3-6 ou commit les changements
+
+## Issues non fixés (action manuelle requise)
+| Story | Issue | Action |
+|-------|-------|--------|
+| 2-1 | Leaked Password Protection désactivé | Supabase Dashboard > Auth > Settings |
+| 2-2 | Fonction `validate_uuid` non utilisée | Supprimer de validators.py (optionnel) |
+| 2-2 | Pas de rate limiting | Future improvement |
+| 3-1 | feedparser.parse() sans timeout | Future improvement |
+| 3-2 | Rate limit 1s vs 2s documenté | Clarifier documentation |
 
 ## Fichiers importants à relire
-- `backend/app/services/base_fetcher.py` — Classe abstraite à utiliser
-- `backend/app/services/reddit_fetcher.py` — À migrer (lignes 280-316 à supprimer après migration)
-- `backend/app/routers/articles.py:373-379` — M5 error message à sanitize
+- `_bmad-output/implementation-artifacts/stories/` — Toutes les story files
+- `backend/app/services/` — Fetchers RSS/Reddit/Capture
+- `backend/app/routers/` — APIs endpoints
 
 ## Instructions pour la prochaine session
 
 1. Lis ce fichier
-2. Continue le fix M1 :
+2. Option A : **Continuer le code review**
    ```
-   - Modifier reddit_fetcher.py pour hériter de BaseFetcher
-   - Remplacer self._save_article() par self.save_article()
-   - Remplacer self._update_source_last_fetched() par self.update_source_last_fetched()
-   - Supprimer les méthodes dupliquées (lignes 280-316)
+   /review
    ```
-3. Puis fix M5 (sanitize error messages dans articles.py:373-379)
-4. Puis fix L2 (CORS configurable dans main.py)
+   Reprendre à partir de Epic 3 (mettre à jour story files 3-1 à 3-4, puis Epic 4-6)
 
-## Projet Supabase
-- **ID** : `ycfbkpaoiztfhlfclcqh`
-- **Région** : eu-west-1
-- **Status** : ACTIVE_HEALTHY
+3. Option B : **Commit les changements faits**
+   ```bash
+   git add -A
+   git commit -m "fix: code review - search_path DB functions, subreddit validation"
+   git push
+   ```
 
-## Commandes utiles
-```bash
-# Backend
-cd backend && uvicorn app.main:app --reload
+4. Option C : **Action manuelle Supabase**
+   - Aller sur https://supabase.com/dashboard/project/ycfbkpaoiztfhlfclcqh
+   - Auth > Settings > Enable "Leaked Password Protection"
 
-# Frontend
-cd frontend && npm run dev
+## Résumé des stories reviewées
 
-# Vérifier les imports
-cd backend && python -c "from app.services.rss_fetcher import RSSFetcher; print('OK')"
-```
+| Story | Status | Issues Found | Issues Fixed |
+|-------|--------|--------------|--------------|
+| 2-1 | ✅ Done | 6 | 4 |
+| 2-2 | ✅ Done | 5 | 0 |
+| 2-3 | ✅ Done | 4 | 2 |
+| 2-4 | ✅ Done | 4 | 0 |
+| 3-1 | 📝 Reviewé | 3 | 0 |
+| 3-2 | 📝 Reviewé | 2 | 0 |
+| 3-3 | 📝 Reviewé | 0 | 0 |
+| 3-4 | 📝 Reviewé | 0 | 0 |
+| 4-1 to 6-4 | ⏳ Pending | - | - |
 
 ## Notes
-- Le rate limiter est in-memory (suffisant pour single-worker, Redis recommandé pour prod multi-worker)
-- La validation UUID utilise le pattern FastAPI `Path()` avec regex intégré
-- Protection SSRF bloque : IPs privées, loopback, link-local, cloud metadata, ports internes
+- Le code review utilise le workflow BMAD `/bmad:bmm:workflows:code-review`
+- Chaque story reviewée reçoit une section "Senior Developer Review (AI)" dans son fichier
+- Les fonctions Supabase ont été corrigées directement via MCP (pas de migration locale)
