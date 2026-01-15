@@ -160,24 +160,15 @@ def rate_limit_by_user(
     Must be used with endpoints that have CurrentUser parameter named 'current_user'.
     """
 
-    def key_extractor(request: Request) -> str:
-        # User ID will be extracted in wrapper
-        return f"user:{request.state.rate_limit_user_id}:{request.url.path}"
-
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             # Get current_user from kwargs
             current_user = kwargs.get("current_user")
-            request = kwargs.get("request")
 
             if current_user is None:
                 # Fallback to IP-based limiting
                 return await rate_limit(max_requests, window_seconds, tokens=tokens)(func)(*args, **kwargs)
-
-            # Store user_id in request state for key extraction
-            if request:
-                request.state.rate_limit_user_id = current_user.id
 
             rate_key = f"user:{current_user.id}:{func.__name__}"
 

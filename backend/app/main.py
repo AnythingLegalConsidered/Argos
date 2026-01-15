@@ -1,12 +1,14 @@
 """Argos API - FastAPI application entry point."""
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.routers import sources, fetch, articles
+from app.scheduler import start_scheduler, stop_scheduler
 
 # Configure logging
 logging.basicConfig(
@@ -17,12 +19,26 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan - start/stop background services."""
+    # Startup: start the scheduler
+    start_scheduler()
+    logger.info("Background scheduler started")
+    yield
+    # Shutdown: stop the scheduler
+    stop_scheduler()
+    logger.info("Background scheduler stopped")
+
+
 app = FastAPI(
     title=settings.api_title,
     version=settings.api_version,
     description="Argos - Intelligent Veille Platform API",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS middleware - origins configurable via CORS_ORIGINS env var

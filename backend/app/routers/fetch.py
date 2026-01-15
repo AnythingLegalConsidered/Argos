@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks
 from supabase import Client
 
 from app.auth import CurrentUser
-from app.database import get_db
+from app.database import get_db, get_supabase_client
 from app.schemas.fetch import FetchSummary
 from app.services.fetch_service import FetchService
 from app.utils.rate_limiter import rate_limit_by_user
@@ -45,7 +45,6 @@ async def trigger_fetch(
 @rate_limit_by_user(max_requests=5, window_seconds=300)  # 5 fetches per 5 minutes
 async def trigger_fetch_background(
     current_user: CurrentUser,
-    db: Annotated[Client, Depends(get_db)],
     background_tasks: BackgroundTasks,
 ) -> dict:
     """
@@ -56,6 +55,8 @@ async def trigger_fetch_background(
     """
 
     async def run_fetch(user_id: str) -> None:
+        # Use cached client instead of request-scoped db to avoid closure issues
+        db = get_supabase_client()
         fetch_service = FetchService(db)
         try:
             await fetch_service.fetch_all_sources(user_id)
