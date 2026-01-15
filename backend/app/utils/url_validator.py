@@ -59,50 +59,57 @@ def is_ip_blocked(ip_str: str) -> bool:
         return False
 
 
-def validate_url_for_ssrf(url: str) -> tuple[bool, str]:
+def validate_url_for_ssrf(url: str) -> tuple[bool, str, list[str]]:
     """
     Validate a URL to prevent SSRF attacks.
 
     Returns:
-        Tuple of (is_safe, error_message)
+        Tuple of (is_safe, error_message, resolved_ips)
+        resolved_ips contains the validated IPs to use for the actual request
+        (prevents DNS rebinding attacks by pinning IPs at validation time)
     """
     try:
         parsed = urlparse(url)
 
+        resolved_ips: list[str] = []
+
         # Only allow HTTP(S)
         if parsed.scheme not in ("http", "https"):
-            return False, f"Invalid scheme: {parsed.scheme}. Only HTTP(S) allowed."
+            return False, f"Invalid scheme: {parsed.scheme}. Only HTTP(S) allowed.", []
 
         hostname = parsed.hostname
         if not hostname:
-            return False, "Invalid URL: no hostname"
+            return False, "Invalid URL: no hostname", []
 
         hostname_lower = hostname.lower()
 
         # Check blocked hostnames
         if hostname_lower in BLOCKED_HOSTNAMES:
-            return False, f"Blocked hostname: {hostname}"
+            return False, f"Blocked hostname: {hostname}", []
 
         # Check blocked hostname patterns
         for pattern in BLOCKED_HOSTNAME_PATTERNS:
             if pattern in hostname_lower:
-                return False, f"Blocked hostname pattern: {hostname}"
+                return False, f"Blocked hostname pattern: {hostname}", []
 
         # Check if hostname is an IP address
         try:
             ip = ipaddress.ip_address(hostname)
             if is_ip_blocked(str(ip)):
-                return False, f"Blocked IP range: {hostname}"
+                return False, f"Blocked IP range: {hostname}", []
+            resolved_ips = [str(ip)]
         except ValueError:
             # Not an IP, resolve the hostname
             try:
-                # Resolve DNS to check actual IP
-                resolved_ips = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
-                for result in resolved_ips:
+                # Resolve DNS to check actual IP - store for later use (prevents rebinding)
+                addr_info = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
+                for result in addr_info:
                     ip_str = result[4][0]
                     if is_ip_blocked(ip_str):
                         logger.warning(f"URL {url} resolves to blocked IP: {ip_str}")
-                        return False, f"Hostname resolves to blocked IP range"
+                        return False, f"Hostname resolves to blocked IP range", []
+                    if ip_str not in resolved_ips:
+                        resolved_ips.append(ip_str)
             except socket.gaierror:
                 # DNS resolution failed - could be intentional for testing
                 # Allow it but log
@@ -112,10 +119,10 @@ def validate_url_for_ssrf(url: str) -> tuple[bool, str]:
         port = parsed.port
         internal_ports = {22, 23, 25, 445, 3306, 5432, 6379, 27017, 8006}
         if port in internal_ports:
-            return False, f"Blocked port: {port}"
+            return False, f"Blocked port: {port}", []
 
-        return True, ""
+        return True, "", resolved_ips
 
     except Exception as e:
         logger.error(f"URL validation error: {e}")
-        return False, f"Invalid URL format"
+        return False, f"Invalid URL format", []

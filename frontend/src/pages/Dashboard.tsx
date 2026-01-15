@@ -4,15 +4,13 @@
  * Design: Argos "Ancient Greece meets Modern Tech"
  */
 
-import { useState } from 'react'
 import { Navbar } from '../components/layout/Navbar'
 import { ArticleFeed } from '../components/articles/ArticleFeed'
 import { useArticles } from '../hooks/useArticles'
-import type { ArticleFilters } from '../types/article'
 
 export function Dashboard() {
-  const [filters] = useState<ArticleFilters>({})
-  const { articles, loading, error, hasMore, totalCount, loadMore, refresh } = useArticles(filters)
+  // TODO: Add filter UI when needed (source, category, date range)
+  const { articles, loading, error, hasMore, totalCount, loadMore, refresh } = useArticles()
 
   return (
     <div className="min-h-screen bg-background">

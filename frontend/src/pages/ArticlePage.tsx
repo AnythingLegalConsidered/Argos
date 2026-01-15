@@ -5,57 +5,38 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import DOMPurify from 'dompurify'
 import { Navbar } from '../components/layout/Navbar'
-import { useAuth } from '../hooks/useAuth'
+import { api } from '../services/api'
 import type { ArticleDetail } from '../types/article'
-
-const API_BASE = 'http://localhost:8000'
 
 export function ArticlePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { session } = useAuth()
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!session?.access_token || !id) {
-        setError('Not authenticated')
+      if (!id) {
+        setError('ID article manquant')
         setLoading(false)
         return
       }
 
       try {
-        const response = await fetch(`${API_BASE}/api/articles/${id}`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        })
-
-        if (response.status === 404) {
-          setError('Article non trouve')
-          setLoading(false)
-          return
-        }
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}))
-          throw new Error(data.detail || `HTTP ${response.status}`)
-        }
-
-        const data = await response.json()
+        const data = await api.get<ArticleDetail>(`/api/articles/${id}`)
         setArticle(data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load article')
+        setError(err instanceof Error ? err.message : 'Impossible de charger l\'article')
       } finally {
         setLoading(false)
       }
     }
 
     fetchArticle()
-  }, [session?.access_token, id])
+  }, [id])
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return null
@@ -124,7 +105,7 @@ export function ArticlePage() {
               />
             </svg>
             <h2 className="font-display text-2xl text-charcoal mb-2">
-              {error || 'Article non trouve'}
+              {error || 'Article non trouvé'}
             </h2>
             <p className="text-muted-foreground mb-6">
               Cet article n'existe pas ou vous n'avez pas la permission de le voir.
@@ -245,12 +226,17 @@ export function ArticlePage() {
             )}
           </header>
 
-          {/* Article content */}
+          {/* Article content - sanitized to prevent XSS */}
           <div className="prose-article">
             {article.content ? (
               <div
                 className="whitespace-pre-wrap"
-                dangerouslySetInnerHTML={{ __html: article.content }}
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(article.content, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'code', 'pre'],
+                    ALLOWED_ATTR: ['href', 'target', 'rel'],
+                  })
+                }}
               />
             ) : (
               <p className="text-muted-foreground italic">

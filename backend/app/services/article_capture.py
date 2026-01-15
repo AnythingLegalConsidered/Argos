@@ -46,7 +46,8 @@ class ArticleCaptureService:
             Exception: For other errors (network, etc.)
         """
         # SSRF protection: validate URL before fetching
-        is_safe, error_msg = validate_url_for_ssrf(url)
+        # Returns pinned IPs to prevent DNS rebinding attacks
+        is_safe, error_msg, pinned_ips = validate_url_for_ssrf(url)
         if not is_safe:
             logger.warning(f"SSRF blocked for user {user_id}: {url} - {error_msg}")
             raise ValueError(f"URL not allowed: {error_msg}")
@@ -59,8 +60,8 @@ class ArticleCaptureService:
             logger.info(f"Article already exists: {existing['id']}")
             return existing
 
-        # Fetch the page
-        html = await self._fetch_url(url)
+        # Fetch the page using pinned IPs to prevent DNS rebinding
+        html = await self._fetch_url(url, pinned_ips)
 
         # Extract content
         extracted = self._extract_content(html, url)
@@ -80,14 +81,45 @@ class ArticleCaptureService:
         logger.info(f"Article captured: {result.data[0]['id']}")
         return result.data[0]
 
-    async def _fetch_url(self, url: str) -> str:
-        """Fetch HTML content from URL."""
+    async def _fetch_url(self, url: str, pinned_ips: list[str] | None = None) -> str:
+        """
+        Fetch HTML content from URL.
+
+        Args:
+            url: The URL to fetch
+            pinned_ips: Pre-validated IPs to use (prevents DNS rebinding).
+                       If provided and non-empty, connects directly to first IP.
+        """
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        headers = {"User-Agent": USER_AGENT}
+        request_url = url
+        verify_ssl = True
+
+        # Use pinned IP if available (prevents DNS rebinding attacks)
+        if pinned_ips and hostname:
+            pinned_ip = pinned_ips[0]
+            # Replace hostname with IP in URL, add Host header
+            if parsed.port:
+                request_url = url.replace(
+                    f"://{hostname}:{parsed.port}",
+                    f"://{pinned_ip}:{parsed.port}",
+                    1
+                )
+            else:
+                request_url = url.replace(f"://{hostname}", f"://{pinned_ip}", 1)
+            headers["Host"] = hostname
+            # SSL verification fails when connecting to IP, disable for pinned IPs
+            verify_ssl = False
+            logger.debug(f"Using pinned IP {pinned_ip} for {hostname}")
+
         async with httpx.AsyncClient(
-            headers={"User-Agent": USER_AGENT},
+            headers=headers,
             timeout=30.0,
             follow_redirects=True,
+            verify=verify_ssl,
         ) as client:
-            response = await client.get(url)
+            response = await client.get(request_url)
 
             if response.status_code == 403:
                 raise ValueError("Access denied (403). Site may block automated access.")

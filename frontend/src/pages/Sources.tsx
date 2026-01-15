@@ -113,7 +113,7 @@ export function Sources() {
             "
           >
             <Plus className="w-5 h-5" />
-            Add Source
+            Ajouter
           </button>
         </div>
       </header>
@@ -145,7 +145,7 @@ export function Sources() {
             <div className="w-16 h-16 mx-auto mb-4 bg-terracotta/10 rounded-full flex items-center justify-center">
               <Rss className="w-8 h-8 text-terracotta" />
             </div>
-            <h2 className="font-serif text-xl text-charcoal mb-2">No sources yet</h2>
+            <h2 className="font-serif text-xl text-charcoal mb-2">Aucune source</h2>
             <p className="text-charcoal/60 mb-6">
               Sélectionnez des sources suggérées ci-dessus ou ajoutez vos propres sources.
             </p>
@@ -193,9 +193,9 @@ export function Sources() {
         {/* Stats footer */}
         {!loading && sources.length > 0 && (
           <div className="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-charcoal/50">
-            {sources.length} source{sources.length !== 1 ? 's' : ''} configured
+            {sources.length} source{sources.length !== 1 ? 's' : ''} configurée{sources.length !== 1 ? 's' : ''}
             {' • '}
-            {sources.filter((s) => s.is_active).length} active
+            {sources.filter((s) => s.is_active).length} active{sources.filter((s) => s.is_active).length !== 1 ? 's' : ''}
           </div>
         )}
       </main>

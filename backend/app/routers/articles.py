@@ -1,7 +1,9 @@
 """Articles API endpoints."""
 
+import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+from io import BytesIO
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -140,9 +142,6 @@ async def export_articles(
 
     - **format**: Export format (currently only 'json' is supported)
     """
-    import json
-    from io import BytesIO
-
     if format != "json":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -178,7 +177,7 @@ async def export_articles(
         })
 
     export_data = {
-        "exported_at": datetime.utcnow().isoformat(),
+        "exported_at": datetime.now(timezone.utc).isoformat(),
         "total_articles": len(articles),
         "articles": articles,
     }
@@ -187,7 +186,7 @@ async def export_articles(
     json_bytes = json.dumps(export_data, indent=2, ensure_ascii=False).encode("utf-8")
     buffer = BytesIO(json_bytes)
 
-    filename = f"argos_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+    filename = f"argos_export_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
 
     logger.info(f"Exported {len(articles)} articles for user {current_user.id}")
 

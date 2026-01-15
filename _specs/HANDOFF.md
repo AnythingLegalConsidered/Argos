@@ -1,94 +1,98 @@
-# Handoff — 2026-01-15 Session 2
+# Handoff — 2026-01-15 Session 5
 
 ## Contexte
-Argos est une plateforme de veille personnelle (RSS + Reddit) avec FastAPI backend et React frontend, utilisant Supabase. Le MVP est **complet** (6 Epics, 19 Stories). Cette session a continué le **code review ADVERSARIAL BMAD** et appliqué des fixes.
+Argos est une plateforme de veille personnelle (RSS + Reddit) avec FastAPI backend et React frontend, utilisant Supabase. Le MVP est **100% complet** (17/17 stories done). Cette session a continué le code review BMAD adversarial sur les stories 3-4 et 4-x.
 
 ## Ce qui a été fait dans cette session
 
 ### Stories reviewées et fixées
 
-| Story | Issues Found | Issues Fixed | Status Final |
-|-------|--------------|--------------|--------------|
-| **2-3** API CRUD Reddit | 4 (1H, 3M) | 4 | in-progress (task optionnelle restante) |
-| **3-1** RSS Fetcher | 5 (3M, 2L) | 4 | done |
-| **2-2** API CRUD Sources | 2 (1M, 1L) | 1 | done |
+| Story | Issues Found | Fixed | Status |
+|-------|--------------|-------|--------|
+| **3-4** Manual Article Capture | 4 (2M, 2L) | 3 | done |
+| **4-1 to 4-4** Dashboard/UI | 6 (2M, 4L) | 5 | done |
 
 ### Fixes appliqués
 
-| Fichier | Fix |
-|---------|-----|
-| `backend/app/schemas/source.py` | + logging sur validation errors (subreddit, RSS URL) |
-| `backend/app/services/rss_fetcher.py` | httpx async fetch (non-blocking), timeout 30s, `html.unescape()`, MAX_ENTRIES=100 |
-| `backend/app/services/reddit_fetcher.py` | Regex aligné avec schema (3-21 chars) |
-| `backend/app/utils/validators.py` | Supprimé code mort (`validate_uuid`, `UUID_PATTERN`, import `re`) |
-| `_bmad-output/.../2-2-*.md` | MAJ review section |
-| `_bmad-output/.../2-3-*.md` | AC corrigé (422 vs 400), task unmarked |
-| `_bmad-output/.../3-1-*.md` | Ajout review section |
-| `_bmad-output/.../sprint-status.yaml` | 2-3 → in-progress, stats 16 done / 1 in-progress |
+**Story 3-4 (Manual Article Capture):**
+- M1 : DNS rebinding TOCTOU → IP pinning (validate + fetch avec mêmes IPs)
+- M2 : `datetime.utcnow()` deprecated → `datetime.now(timezone.utc)`
+- L2 : Import `json` dupliqué → déplacé en haut du fichier
 
-### Issues par story
+**Stories 4-x (Dashboard/UI):**
+- M1 : XSS via `dangerouslySetInnerHTML` → DOMPurify sanitization
+- M2 : Hardcoded `API_BASE` → utilise `api.ts` avec `VITE_API_URL`
+- L1 : useState filters inutilisé → simplifié
+- L2 : Typo "trouve" → "trouvé"
+- L3 : Mélange FR/EN dans Sources → tout en français
 
-**Story 2-3 (Reddit API):**
-- H1 ✅ AC-2.3.2 spécifiait 400, retourne 422 → AC corrigé
-- M2 ✅ Double logique parsing subreddit → Regex fetcher aligné
-- M3 ✅ Task "existence check" marquée [x] non faite → Task remise [ ]
-- L3 ✅ Pas de logging validation → Ajouté
+### Fichiers créés/modifiés
 
-**Story 3-1 (RSS Fetcher):**
-- M1 ✅ feedparser.parse(url) bloquant → httpx async fetch
-- M2 ✅ Pas de timeout → FETCH_TIMEOUT = 30s
-- M3 ✅ HTML entities hardcodées → `html.unescape()`
-- L2 ✅ Pas de limite entries → MAX_ENTRIES = 100
+**Backend:**
+| Fichier | Action |
+|---------|--------|
+| backend/app/routers/articles.py | datetime fix, import cleanup |
+| backend/app/services/article_capture.py | Pinned IPs pour fetch |
+| backend/app/utils/url_validator.py | Retourne resolved IPs |
 
-**Story 2-2 (CRUD Sources):**
-- M1 ✅ `validate_uuid()` code mort → Supprimé
+**Frontend:**
+| Fichier | Action |
+|---------|--------|
+| frontend/src/pages/ArticlePage.tsx | XSS fix (DOMPurify), API client, typo |
+| frontend/src/pages/Dashboard.tsx | Removed unused state |
+| frontend/src/pages/Sources.tsx | French consistency |
+| frontend/package.json | +dompurify |
 
 ## État actuel
-- **Tâche en cours** : aucune
-- **Dernière action** : Code review story 2-2, suppression code mort
-- **Prochaine action** : Continuer review autres stories OU commit changes
+- **Tâche en cours** : Aucune - reviews 3-4 et 4-x terminées
+- **Dernière action** : Fixes frontend appliqués, type-check OK
+- **Prochaine action** : Commit des changements OU continuer reviews 5-x (Search)
 
-## Sprint Status
-```yaml
-done: 16
-in_progress: 1  # 2-3 (task optionnelle "subreddit existence check")
-pending: 0
-```
+## Commits à créer
+Les changements ne sont PAS encore commités. Deux options :
+1. Un commit groupé pour tous les fixes
+2. Continuer les reviews puis commit global
 
-## Fichiers modifiés (non commités)
-```
-M _specs/HANDOFF.md
-M backend/app/schemas/source.py
-M backend/app/services/reddit_fetcher.py
-M backend/app/services/rss_fetcher.py
-M backend/app/utils/validators.py
-M _bmad-output/implementation-artifacts/stories/2-2-api-crud-sources.md
-M _bmad-output/implementation-artifacts/stories/2-3-api-crud-reddit.md
-M _bmad-output/implementation-artifacts/stories/3-1-rss-fetcher-service.md
-M _bmad-output/implementation-artifacts/sprint-status.yaml
-```
+## Stories reviewées (total projet)
+| Story | Status | Issues Fixed |
+|-------|--------|--------------|
+| 2-2 API CRUD Sources | done | 2 |
+| 2-3 API CRUD Reddit | done | 4 |
+| 3-1 RSS Fetcher | done | 5 |
+| 3-2 Reddit Fetcher | done | 4 |
+| 3-3 Periodic Fetch Job | done | 4 |
+| 3-4 Manual Article Capture | done | 3 |
+| 4-1 to 4-4 Dashboard/UI | done | 5 |
+
+## Stories restantes à reviewer
+- 5-1 à 5-3 (Search)
+- 6-1 à 6-4 (Polish/Deploy)
 
 ## Instructions pour la prochaine session
 
 1. Lis ce fichier : `_specs/HANDOFF.md`
 
-2. **Option A : Commit les changements**
+2. **Option A - Commit les fixes actuels** :
    ```bash
    git add -A
-   git commit -m "fix: code review improvements - async RSS fetch, validation logging, dead code removal"
+   git commit -m "fix: code review 3-4 + 4-x - security and UX improvements"
+   git push
    ```
 
-3. **Option B : Continuer le code review**
+3. **Option B - Continuer les reviews** :
    ```
    /review
    ```
-   Stories restantes : 3-2, 3-3, 3-4, 4-1 à 4-4, 5-1 à 5-3, 6-1 à 6-4
+   Passer aux stories 5-x (Search)
 
-4. **Option C : Compléter story 2-3**
-   La task optionnelle "subreddit existence check" n'est pas implémentée. Pour la compléter :
-   - Ajouter un appel API Reddit pour vérifier que le subreddit existe lors de la création de source
+## Notes techniques
 
-## Notes
-- Le RSS fetcher utilise maintenant httpx pour des requêtes async (non-bloquantes)
-- Toutes les validation errors sont maintenant loggées (utile pour debug/monitoring)
-- Le fichier `validators.py` est maintenant minimal (juste `UUIDPath`)
+### DNS Rebinding Fix (3-4)
+- `validate_url_for_ssrf()` retourne maintenant `(is_safe, error_msg, resolved_ips)`
+- `_fetch_url()` utilise les IPs pinned pour éviter un second DNS lookup
+- SSL verification désactivée quand on connecte directement à une IP
+
+### XSS Fix (4-x)
+- DOMPurify installé avec whitelist de tags HTML safe
+- Tags autorisés : p, br, strong, em, a, ul, ol, li, h1-h4, blockquote, code, pre
+- Attributs autorisés : href, target, rel
