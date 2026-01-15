@@ -4,6 +4,7 @@
  */
 
 import { Link } from 'react-router-dom'
+import DOMPurify from 'dompurify'
 import type { SearchResultItem } from '../../types/article'
 
 interface SearchResultCardProps {
@@ -36,10 +37,15 @@ export function SearchResultCard({ result }: SearchResultCardProps) {
         )}
       </div>
 
-      {/* Highlighted headline */}
+      {/* Highlighted headline - sanitized, only allow <mark> for highlighting */}
       <div
         className="text-muted-foreground text-sm mb-3 line-clamp-3 search-headline"
-        dangerouslySetInnerHTML={{ __html: result.headline }}
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(result.headline, {
+            ALLOWED_TAGS: ['mark'],
+            ALLOWED_ATTR: [],
+          })
+        }}
       />
 
       {/* Meta */}

@@ -4,10 +4,9 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { useAuth } from './useAuth'
+import { api } from '../services/api'
 import type { SearchResultItem, SearchResponse } from '../types/article'
 
-const API_BASE = 'http://localhost:8000'
 const DEFAULT_LIMIT = 20
 const DEBOUNCE_MS = 300
 
@@ -16,6 +15,7 @@ interface UseSearchReturn {
   loading: boolean
   error: string | null
   hasMore: boolean
+  totalCount: number
   query: string
   setQuery: (q: string) => void
   search: (q: string) => Promise<void>
@@ -24,34 +24,27 @@ interface UseSearchReturn {
 }
 
 export function useSearch(): UseSearchReturn {
-  const { session } = useAuth()
   const [results, setResults] = useState<SearchResultItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
+  const [totalCount, setTotalCount] = useState(0)
   const [query, setQueryState] = useState('')
   const [offset, setOffset] = useState(0)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
+  const requestIdRef = useRef(0)
 
   const executeSearch = useCallback(
     async (searchQuery: string, currentOffset: number, append: boolean = false) => {
-      if (!session?.access_token) {
-        setError('Not authenticated')
-        return
-      }
-
       if (!searchQuery.trim()) {
         setResults([])
         setHasMore(false)
+        setTotalCount(0)
         return
       }
 
-      // Cancel previous request
-      if (abortRef.current) {
-        abortRef.current.abort()
-      }
-      abortRef.current = new AbortController()
+      // Track request to ignore stale responses
+      const requestId = ++requestIdRef.current
 
       setLoading(true)
       setError(null)
@@ -63,19 +56,10 @@ export function useSearch(): UseSearchReturn {
           limit: DEFAULT_LIMIT.toString(),
         })
 
-        const response = await fetch(`${API_BASE}/api/articles/search?${params}`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          signal: abortRef.current.signal,
-        })
+        const data = await api.get<SearchResponse>(`/api/articles/search?${params}`)
 
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}))
-          throw new Error(data.detail || `HTTP ${response.status}`)
-        }
-
-        const data: SearchResponse = await response.json()
+        // Ignore if a newer request was made
+        if (requestId !== requestIdRef.current) return
 
         if (append) {
           setResults((prev) => [...prev, ...data.results])
@@ -84,17 +68,19 @@ export function useSearch(): UseSearchReturn {
         }
 
         setHasMore(data.has_more)
+        setTotalCount(data.total_count)
         setOffset(currentOffset + data.results.length)
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return // Ignore aborted requests
-        }
-        setError(err instanceof Error ? err.message : 'Search failed')
+        // Ignore if a newer request was made
+        if (requestId !== requestIdRef.current) return
+        setError(err instanceof Error ? err.message : 'Erreur de recherche')
       } finally {
-        setLoading(false)
+        if (requestId === requestIdRef.current) {
+          setLoading(false)
+        }
       }
     },
-    [session?.access_token]
+    []
   )
 
   const search = useCallback(
@@ -143,9 +129,6 @@ export function useSearch(): UseSearchReturn {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current)
       }
-      if (abortRef.current) {
-        abortRef.current.abort()
-      }
     }
   }, [])
 
@@ -154,6 +137,7 @@ export function useSearch(): UseSearchReturn {
     loading,
     error,
     hasMore,
+    totalCount,
     query,
     setQuery,
     search,

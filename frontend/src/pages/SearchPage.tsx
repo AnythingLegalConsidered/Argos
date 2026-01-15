@@ -14,7 +14,7 @@ import { useSearch } from '../hooks/useSearch'
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') || ''
-  const { results, loading, error, hasMore, query, setQuery, loadMore } = useSearch()
+  const { results, loading, error, hasMore, totalCount, query, setQuery, loadMore } = useSearch()
 
   // Initialize with URL query param
   useEffect(() => {
@@ -115,7 +115,8 @@ export function SearchPage() {
         {results.length > 0 && (
           <>
             <p className="text-sm text-muted-foreground mb-4">
-              {results.length} résultat{results.length > 1 ? 's' : ''} pour "{query}"
+              {totalCount} résultat{totalCount > 1 ? 's' : ''} pour "{query}"
+              {results.length < totalCount && ` (${results.length} affichés)`}
             </p>
 
             <div className="space-y-4">
