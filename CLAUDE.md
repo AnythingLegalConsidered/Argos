@@ -20,7 +20,13 @@
 - Backend routes: `backend/app/routers/`
 - Frontend pages: `frontend/src/pages/`
 - Skills: `.claude/skills/`
-- Specs: `_specs/phases/`
+
+## BMAD Artifacts
+- PRD: `_bmad-output/planning-artifacts/prd.md`
+- Epics: `_bmad-output/planning-artifacts/epics.md`
+- Stories: `_bmad-output/implementation-artifacts/stories/`
+- Sprint Status: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- Handoff: `_bmad-output/HANDOFF.md`
 
 ## Rules
 - ALWAYS read file before modifying
@@ -29,5 +35,9 @@
 - Logging on every feature
 - Comments explain WHY, not WHAT
 
-## Workflow
-1. Read spec → 2. Plan → 3. Code → 4. preflight.sh → 5. E2E test → 6. Commit
+## Workflow (BMAD)
+1. `/bmad:bmm:workflows:sprint-status` → Check current state
+2. Pick story from sprint-status.yaml
+3. Read story file → Plan → Code
+4. preflight.sh → E2E test → Commit
+5. Update sprint-status.yaml
