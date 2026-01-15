@@ -18,20 +18,12 @@ logger = logging.getLogger(__name__)
 # Reddit requires a proper User-Agent
 USER_AGENT = "Argos/1.0 (Veille Platform; https://github.com/argos)"
 
-# Rate limiting: 1 request per second minimum
-REQUEST_DELAY = 1.0
+# Rate limiting: 1 request per 2 seconds (Reddit recommends max 30 req/min)
+REQUEST_DELAY = 2.0
 
 # Limits
 MAX_POSTS = 25
-MAX_COMMENTS = 5
-
-
-class RedditFetcher(BaseFetcher):
-    """Service for fetching posts and comments from Reddit subreddits."""
-
-    def __init__(self, db: Client):
-        super().__init__(db)
-        self._http_client: httpx.AsyncClient | None = None
+MAX_COMMENTS = 10
 
 
 async def check_subreddit_exists(subreddit: str) -> tuple[bool, str | None]:
@@ -85,6 +77,14 @@ async def check_subreddit_exists(subreddit: str) -> tuple[bool, str | None]:
             # Network error - can't verify, assume exists (fail gracefully)
             logger.warning(f"Error checking r/{subreddit}: {e}")
             return (True, None)
+
+
+class RedditFetcher(BaseFetcher):
+    """Service for fetching posts and comments from Reddit subreddits."""
+
+    def __init__(self, db: Client):
+        super().__init__(db)
+        self._http_client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
@@ -290,7 +290,7 @@ async def check_subreddit_exists(subreddit: str) -> tuple[bool, str | None]:
         if category:
             tags.append(category.lower())
 
-        # Reddit-specific metadata
+        # Reddit-specific metadata (includes comments for searchability)
         metadata = {
             "reddit": {
                 "score": score,
@@ -300,6 +300,7 @@ async def check_subreddit_exists(subreddit: str) -> tuple[bool, str | None]:
                 "subreddit": subreddit,
                 "is_self": is_self,
                 "post_id": post_id,
+                "top_comments": comments,  # Store comments in JSONB for search/analysis
             }
         }
 
