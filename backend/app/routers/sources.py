@@ -11,7 +11,8 @@ from supabase import Client
 
 from app.auth import CurrentUser
 from app.database import get_db
-from app.schemas.source import SourceCreate, SourceList, SourceResponse
+from app.schemas.source import SourceCreate, SourceList, SourceResponse, SourceType
+from app.services.reddit_fetcher import check_subreddit_exists
 from app.utils.validators import UUIDPath
 
 
@@ -142,6 +143,18 @@ async def create_source(
     - **name**: Display name for the source
     - **category**: Optional category for grouping
     """
+    # Check subreddit existence for Reddit sources (fail gracefully)
+    if source.type == SourceType.REDDIT:
+        # Extract subreddit name from normalized URL (/r/subreddit -> subreddit)
+        subreddit = source.url.lstrip("/r/")
+        exists, error_msg = await check_subreddit_exists(subreddit)
+        if not exists:
+            logger.warning(f"Subreddit check failed for {source.url}: {error_msg}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg or f"Subreddit {source.url} does not exist or is inaccessible",
+            )
+
     try:
         result = (
             db.table("sources")

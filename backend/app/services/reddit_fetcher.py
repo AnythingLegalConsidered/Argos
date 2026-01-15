@@ -33,6 +33,59 @@ class RedditFetcher(BaseFetcher):
         super().__init__(db)
         self._http_client: httpx.AsyncClient | None = None
 
+
+async def check_subreddit_exists(subreddit: str) -> tuple[bool, str | None]:
+    """
+    Check if a subreddit exists and is accessible.
+
+    Args:
+        subreddit: Subreddit name (without r/ prefix)
+
+    Returns:
+        Tuple of (exists: bool, error_message: str | None)
+        - (True, None) if subreddit exists and is accessible
+        - (False, "message") if subreddit doesn't exist or is inaccessible
+    """
+    url = f"https://www.reddit.com/r/{subreddit}/about.json"
+
+    async with httpx.AsyncClient(
+        headers={"User-Agent": USER_AGENT},
+        timeout=10.0,
+        follow_redirects=True,
+    ) as client:
+        try:
+            response = await client.get(url)
+
+            if response.status_code == 200:
+                data = response.json()
+                # Check if it's a valid subreddit (not a search redirect)
+                if data.get("kind") == "t5":  # t5 = subreddit
+                    return (True, None)
+                return (False, f"r/{subreddit} is not a valid subreddit")
+
+            if response.status_code == 403:
+                return (False, f"r/{subreddit} is private or quarantined")
+
+            if response.status_code == 404:
+                return (False, f"r/{subreddit} does not exist")
+
+            if response.status_code == 429:
+                # Rate limited - can't verify, assume exists
+                logger.warning("Reddit rate limit hit during subreddit check")
+                return (True, None)
+
+            return (False, f"r/{subreddit} check failed (HTTP {response.status_code})")
+
+        except httpx.TimeoutException:
+            # Timeout - can't verify, assume exists (fail gracefully)
+            logger.warning(f"Timeout checking r/{subreddit}, assuming exists")
+            return (True, None)
+
+        except httpx.HTTPError as e:
+            # Network error - can't verify, assume exists (fail gracefully)
+            logger.warning(f"Error checking r/{subreddit}: {e}")
+            return (True, None)
+
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
         if self._http_client is None or self._http_client.is_closed:
