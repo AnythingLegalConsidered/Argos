@@ -3,6 +3,7 @@
 Fetches and parses RSS feeds, saving articles to the database.
 """
 
+import html
 import logging
 import re
 from datetime import datetime, timezone
@@ -10,18 +11,46 @@ from time import mktime
 from typing import Any
 
 import feedparser
+import httpx
 
 from app.services.base_fetcher import BaseFetcher
 
 logger = logging.getLogger(__name__)
 
+# Timeout for HTTP requests (seconds)
+FETCH_TIMEOUT = 30.0
+
+# Max entries to process per feed (prevent OOM on malformed feeds)
+MAX_ENTRIES = 100
+
 
 class RSSFetcher(BaseFetcher):
     """Service for fetching and parsing RSS feeds."""
 
+    def __init__(self, db):
+        super().__init__(db)
+        self._http_client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        """Get or create HTTP client with timeout."""
+        if self._http_client is None or self._http_client.is_closed:
+            self._http_client = httpx.AsyncClient(
+                timeout=FETCH_TIMEOUT,
+                follow_redirects=True,
+            )
+        return self._http_client
+
+    async def close(self) -> None:
+        """Close HTTP client."""
+        if self._http_client and not self._http_client.is_closed:
+            await self._http_client.aclose()
+
     async def fetch_source(self, source: dict) -> list[dict]:
         """
         Fetch articles from an RSS source.
+
+        Uses httpx for async HTTP fetching, then feedparser for XML parsing.
+        This prevents blocking the event loop during I/O.
 
         Args:
             source: Source dict with id, url, user_id, category
@@ -37,8 +66,14 @@ class RSSFetcher(BaseFetcher):
         logger.info(f"Fetching RSS feed: {source_url}")
 
         try:
-            # Parse the RSS feed
-            feed = feedparser.parse(source_url)
+            # Fetch feed content asynchronously (non-blocking)
+            client = await self._get_client()
+            response = await client.get(source_url)
+            response.raise_for_status()
+            feed_content = response.text
+
+            # Parse the fetched content (CPU-bound, fast)
+            feed = feedparser.parse(feed_content)
 
             if feed.bozo and not feed.entries:
                 # Feed parsing failed completely
@@ -47,9 +82,11 @@ class RSSFetcher(BaseFetcher):
                 )
                 return []
 
-            # Process entries
+            # Process entries (limited to prevent OOM)
             new_articles = []
-            for entry in feed.entries:
+            entries_to_process = feed.entries[:MAX_ENTRIES]
+
+            for entry in entries_to_process:
                 article_data = self._parse_entry(entry, source_id, user_id, category)
                 if article_data:
                     result = await self.save_article(article_data)
@@ -61,10 +98,16 @@ class RSSFetcher(BaseFetcher):
 
             logger.info(
                 f"Fetched {len(new_articles)} new articles from {source_url} "
-                f"(total entries: {len(feed.entries)})"
+                f"(processed {len(entries_to_process)}/{len(feed.entries)} entries)"
             )
             return new_articles
 
+        except httpx.TimeoutException:
+            logger.warning(f"Timeout fetching RSS feed {source_url}")
+            return []
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"HTTP error {e.response.status_code} fetching {source_url}")
+            return []
         except Exception as e:
             logger.error(f"Error fetching RSS feed {source_url}: {e}")
             return []
@@ -156,18 +199,13 @@ class RSSFetcher(BaseFetcher):
         return None
 
     def _strip_html(self, text: str) -> str:
-        """Remove HTML tags from text."""
+        """Remove HTML tags and decode entities from text."""
         if not text:
             return text
-        # Simple HTML tag removal
+        # Remove HTML tags
         clean = re.sub(r"<[^>]+>", "", text)
-        # Decode common HTML entities
-        clean = clean.replace("&nbsp;", " ")
-        clean = clean.replace("&amp;", "&")
-        clean = clean.replace("&lt;", "<")
-        clean = clean.replace("&gt;", ">")
-        clean = clean.replace("&quot;", '"')
-        clean = clean.replace("&#39;", "'")
+        # Decode ALL HTML entities (handles &nbsp;, &amp;, &#8217;, etc.)
+        clean = html.unescape(clean)
         # Normalize whitespace
         clean = re.sub(r"\s+", " ", clean).strip()
         return clean

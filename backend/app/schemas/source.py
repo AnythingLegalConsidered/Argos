@@ -1,11 +1,14 @@
 """Pydantic schemas for Source CRUD operations."""
 
+import logging
 import re
 from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
+
+logger = logging.getLogger(__name__)
 
 
 class SourceType(str, Enum):
@@ -64,6 +67,7 @@ class SourceCreate(BaseModel):
 
         # Validate subreddit name (alphanumeric + underscore, 3-21 chars per Reddit rules)
         if not re.match(r"^[a-zA-Z0-9_]{3,21}$", subreddit):
+            logger.warning(f"Invalid subreddit rejected: '{subreddit}'")
             raise ValueError(
                 f"Invalid subreddit name: {subreddit}. "
                 "Must be 3-21 alphanumeric characters or underscores."
@@ -76,6 +80,7 @@ class SourceCreate(BaseModel):
         """Validate RSS feed URL format."""
         # Basic URL validation
         if not url.startswith(("http://", "https://")):
+            logger.warning(f"Invalid RSS URL rejected: '{url[:100]}'")
             raise ValueError("RSS URL must start with http:// or https://")
 
         # Could add more validation here (check if valid RSS)

@@ -105,9 +105,16 @@ class RedditFetcher(BaseFetcher):
             return []
 
     def _parse_subreddit(self, url: str) -> str | None:
-        """Extract subreddit name from URL format /r/subreddit."""
-        # Handle both /r/subreddit and r/subreddit formats
-        match = re.match(r"^/?r/(\w+)$", url.strip().lower())
+        """
+        Extract subreddit name from normalized URL format /r/subreddit.
+
+        Note: Input should already be normalized by SourceCreate schema validation.
+        This method handles the normalized format (/r/subreddit) and extracts
+        just the subreddit name for API calls.
+        """
+        # Handle normalized format /r/subreddit (from schema validation)
+        # Also handles r/subreddit for backwards compatibility
+        match = re.match(r"^/?r/([a-zA-Z0-9_]{3,21})$", url.strip().lower())
         if match:
             return match.group(1)
         return None
