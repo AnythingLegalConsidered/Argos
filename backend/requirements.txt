@@ -1,0 +1,27 @@
+# FastAPI and server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Supabase
+supabase==2.3.4
+
+# Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# JWT authentication
+pyjwt==2.8.0
+
+# HTTP client (must match supabase constraint: httpx<0.26,>=0.24)
+httpx>=0.24,<0.26
+
+# RSS parsing (for Story 3.1)
+feedparser==6.0.11
+
+# Content extraction (for Story 3.4)
+trafilatura==1.6.4
+
+# Environment
+python-dotenv==1.0.0

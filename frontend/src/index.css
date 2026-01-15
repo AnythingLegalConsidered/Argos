@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Argos Design System - CSS Variables */
+:root {
+  --sand: #F5F0E8;
+  --parchment: #EDE6D8;
+  --marble: #FAFAFA;
+  --terracotta: #C67B5C;
+  --olive: #7B8B6F;
+  --charcoal: #2D2D2D;
+  --bronze: #A5845E;
+  --border: #E5DED4;
+
+  /* shadcn/ui variables */
+  --background: var(--sand);
+  --foreground: var(--charcoal);
+  --card: var(--marble);
+  --card-foreground: var(--charcoal);
+  --popover: var(--marble);
+  --popover-foreground: var(--charcoal);
+  --primary: var(--terracotta);
+  --primary-foreground: var(--marble);
+  --secondary: var(--olive);
+  --secondary-foreground: var(--marble);
+  --muted: var(--parchment);
+  --muted-foreground: #6B6B6B;
+  --accent: var(--bronze);
+  --accent-foreground: var(--marble);
+  --destructive: #DC3545;
+  --destructive-foreground: var(--marble);
+  --border: #E5DED4;
+  --input: #E5DED4;
+  --ring: var(--terracotta);
+  --radius: 12px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl font-semibold;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl font-medium;
+  }
+
+  h4 {
+    @apply text-xl font-medium;
+  }
+}
+
+@layer components {
+  /* Card component */
+  .card {
+    @apply bg-card rounded-lg shadow-card border border-border/50;
+    @apply transition-shadow duration-200;
+  }
+
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+
+  /* Button base */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2;
+    @apply font-medium transition-colors duration-200;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-terracotta-dark;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-olive-dark;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-muted;
+  }
+
+  /* Badge/Tag */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .badge-primary {
+    @apply bg-terracotta/10 text-terracotta;
+  }
+
+  .badge-secondary {
+    @apply bg-olive/10 text-olive;
+  }
+
+  .badge-muted {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  /* Search highlight */
+  .search-headline mark {
+    @apply bg-terracotta/20 text-charcoal px-0.5 rounded;
+  }
+
+  /* Page container */
+  .page-container {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+  }
+
+  /* Article content prose */
+  .prose-article {
+    @apply max-w-prose leading-relaxed text-lg;
+  }
+
+  .prose-article p {
+    @apply mb-6;
+  }
+
+  .prose-article a {
+    @apply text-terracotta hover:text-terracotta-dark underline;
+  }
+
+  .prose-article h2 {
+    @apply mt-10 mb-4;
+  }
+
+  .prose-article h3 {
+    @apply mt-8 mb-3;
+  }
+
+  .prose-article ul, .prose-article ol {
+    @apply mb-6 pl-6;
+  }
+
+  .prose-article li {
+    @apply mb-2;
+  }
+
+  .prose-article blockquote {
+    @apply border-l-4 border-terracotta/30 pl-4 italic text-muted-foreground;
+  }
+
+  .prose-article code {
+    @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+  }
+
+  .prose-article pre {
+    @apply bg-charcoal text-marble p-4 rounded-lg overflow-x-auto mb-6;
+  }
+
+  .prose-article pre code {
+    @apply bg-transparent p-0;
+  }
+}

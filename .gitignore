@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+.mcp.json
+
+# Claude Code local config (audio, caches)
+.claude/audio/
+.claude/settings.json
+.claude/settings.local.json
+_bmad-output/
+_bmad/
+
+# Build
+dist/
+build/
+*.egg-info/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Logs
+*.log
+logs/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Docker
+*.pid

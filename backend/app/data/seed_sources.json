@@ -1,0 +1,76 @@
+{
+  "sources": [
+    {
+      "type": "rss",
+      "url": "https://news.ycombinator.com/rss",
+      "name": "Hacker News",
+      "category": "Tech"
+    },
+    {
+      "type": "rss",
+      "url": "https://feeds.arstechnica.com/arstechnica/technology-lab",
+      "name": "Ars Technica",
+      "category": "Tech"
+    },
+    {
+      "type": "rss",
+      "url": "https://www.nature.com/nature.rss",
+      "name": "Nature",
+      "category": "Science"
+    },
+    {
+      "type": "rss",
+      "url": "https://rss.arxiv.org/rss/cs.AI",
+      "name": "arXiv AI",
+      "category": "Science"
+    },
+    {
+      "type": "rss",
+      "url": "https://feeds.reuters.com/reuters/technologyNews",
+      "name": "Reuters Tech",
+      "category": "News"
+    },
+    {
+      "type": "rss",
+      "url": "https://www.theverge.com/rss/index.xml",
+      "name": "The Verge",
+      "category": "Tech"
+    },
+    {
+      "type": "rss",
+      "url": "https://feeds.feedburner.com/TechCrunch",
+      "name": "TechCrunch",
+      "category": "Tech"
+    },
+    {
+      "type": "rss",
+      "url": "https://blog.cloudflare.com/rss",
+      "name": "Cloudflare Blog",
+      "category": "DevOps"
+    },
+    {
+      "type": "reddit",
+      "url": "/r/programming",
+      "name": "r/programming",
+      "category": "Tech"
+    },
+    {
+      "type": "reddit",
+      "url": "/r/science",
+      "name": "r/science",
+      "category": "Science"
+    },
+    {
+      "type": "reddit",
+      "url": "/r/selfhosted",
+      "name": "r/selfhosted",
+      "category": "DevOps"
+    },
+    {
+      "type": "reddit",
+      "url": "/r/machinelearning",
+      "name": "r/MachineLearning",
+      "category": "Science"
+    }
+  ]
+}
